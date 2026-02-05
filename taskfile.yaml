@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  migrate:up:
+    desc: "Apply migrations"
+    cmds:
+      - go run ./cmd/migrator --storage-path=./storage/sso.db --migrations-path=./migrations up
+
+  migrate:down:
+    desc: "Rollback migrations"
+    cmds:
+      - go run ./cmd/migrator --storage-path=./storage/sso.db --migrations-path=./migrations down

@@ -18,7 +18,7 @@ func New(
 ) *App {
 	// Initialize storage
 
-	// Initialize auth service
+	// Initialize auth services
 	grpcApp := grpcapp.New(log, grpcPort)
 	return &App{
 		GRPCSrv: grpcApp,
