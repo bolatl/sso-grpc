@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"sso/internal/services/auth"
-	"sso/internal/storage"
 )
 
 const emptyVal = 0
@@ -47,7 +46,7 @@ func (s *serverAPI) Login(
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
-			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
 		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
@@ -58,13 +57,13 @@ func (s *serverAPI) Login(
 
 func validateLogin(req *ssov1.LoginRequest) error {
 	if req.GetEmail() == "" {
-		return status.Error(codes.InvalidArgument, "email is empty")
+		return status.Error(codes.InvalidArgument, "email is required")
 	}
 	if req.GetPassword() == "" {
-		return status.Error(codes.InvalidArgument, "password is empty")
+		return status.Error(codes.InvalidArgument, "password is required")
 	}
 	if req.GetAppId() == emptyVal {
-		return status.Error(codes.InvalidArgument, "app_id is empty")
+		return status.Error(codes.InvalidArgument, "app_id is required")
 	}
 	return nil
 }
@@ -78,7 +77,7 @@ func (s *serverAPI) Register(
 	}
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		if errors.Is(err, storage.ErrUserExists) {
+		if errors.Is(err, auth.ErrUserAlreadyExists) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")
 		}
 		return nil, status.Error(codes.Internal, "internal error")
@@ -90,10 +89,10 @@ func (s *serverAPI) Register(
 
 func validateRegister(req *ssov1.RegisterRequest) error {
 	if req.GetEmail() == "" {
-		return status.Error(codes.InvalidArgument, "email is empty")
+		return status.Error(codes.InvalidArgument, "email is required")
 	}
 	if req.GetPassword() == "" {
-		return status.Error(codes.InvalidArgument, "password is empty")
+		return status.Error(codes.InvalidArgument, "password is required")
 	}
 
 	return nil
@@ -108,7 +107,7 @@ func (s *serverAPI) IsAdmin(
 	}
 	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
 	if err != nil {
-		if errors.Is(err, storage.ErrUserNotFound) {
+		if errors.Is(err, auth.ErrUserNotFound) {
 			return nil, status.Error(codes.NotFound, "user not found")
 		}
 		return nil, status.Error(codes.Internal, "internal error")

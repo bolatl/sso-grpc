@@ -14,10 +14,10 @@ import (
 )
 
 var (
-	// ErrInvalidCredentials is returned when the provided credentials are invalid.
-	ErrInvalidCredentials = fmt.Errorf("invalid credentials")
+	ErrInvalidCredentials = fmt.Errorf("invalid email or password")
 	ErrUserAlreadyExists  = fmt.Errorf("user already exists")
 	ErrAppNotFound        = fmt.Errorf("application not found")
+	ErrUserNotFound       = fmt.Errorf("user not found")
 )
 
 type Auth struct {
@@ -104,30 +104,35 @@ func (a *Auth) Login(
 }
 
 // RegisterNewUser creates a new user with the provided email and password, and returns the new user's ID.
-func (a *Auth) RegisterNewUser(
-	ctx context.Context,
-	email string,
-	pass string,
-) (int64, error) {
-	op := "auth.RegisterNewUser"
-	log := a.log.With(slog.String("op", op), slog.String("email", email))
-	log.Info("registering new user")
+func (a *Auth) RegisterNewUser(ctx context.Context, email string, pass string) (int64, error) {
+	const op = "Auth.RegisterNewUser"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("email", email),
+	)
+
+	log.Info("registering user")
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
-		log.Error("failed to hash password", sl.Err(err))
+		log.Error("failed to generate password hash", sl.Err(err))
+
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
+
 	id, err := a.usrSaver.SaveUser(ctx, email, passHash)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			log.Warn("user already exists", sl.Err(err))
 			return 0, fmt.Errorf("%s: %w", op, ErrUserAlreadyExists)
+			// or: return 0, ErrUserAlreadyExists (wrapping optional)
 		}
-		log.Error("failed to save new user", sl.Err(err))
+
+		log.Error("failed to save user", sl.Err(err))
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
-	log.Info("new user registered", slog.Int64("user_id", id))
+
 	return id, nil
 }
 
