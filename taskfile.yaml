@@ -10,3 +10,8 @@ tasks:
     desc: "Rollback migrations"
     cmds:
       - go run ./cmd/migrator --storage-path=./storage/sso.db --migrations-path=./migrations down
+
+  run:
+    desc: "Run the application"
+    cmds:
+      - go run ./cmd/sso --config=./config/local.yaml
